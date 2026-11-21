@@ -1,0 +1,24 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t go-app:latest -t go-app:${{ github.sha }} .
+
+      - name: Redeploy container
+        run: |
+          docker rm -f go-app || true
+          docker run -d --name go-app --restart unless-stopped -p 8888:8080 go-app:latest
+
+      - name: Smoke test
+        run: |
+          sleep 3
+          curl -f http://localhost:8888
